@@ -50,7 +50,9 @@ def xlsx_data(path_file, first_col, second_col) -> List[float]:
 
 
 if __name__ == "__main__":
-    # Before running the code cd to src folder
+    """
+    Before running the code cd to src folder
+    """
 
     main_programm()
 
