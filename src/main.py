@@ -1,12 +1,12 @@
-from os import getenv, path
-from dotenv import load_dotenv
+from os import getenv
 from pathlib import Path
 from typing import List
+from dotenv import load_dotenv
 from pandas import read_excel
 import libs.lpre_heat_protection as hp
 
 """
-Init data: 
+Init data:
     - engine type
     - thrust, chambers count
     - fuel+ox, mass flow rate
@@ -17,17 +17,19 @@ Init data:
     - diametr of nozzle, etcs
 """
 
+
 def main_programm() -> None:
     X_D_PATH_FILE = get_env_path("X_D_PATH_FILE")
 
     # getting x and D coordinates
     x_coord = []
-    D_coord = []
+    d_coord = []
 
-    x_coord, D_coord = xlsx_data(X_D_PATH_FILE, x_coord, D_coord)
+    x_coord, d_coord = xlsx_data(X_D_PATH_FILE, x_coord, d_coord)
 
     print(x_coord)
-    print(D_coord)
+    print(d_coord)
+
 
 def get_env_path(env_name) -> str:
     dotenv_path = Path("../.env")
@@ -35,6 +37,7 @@ def get_env_path(env_name) -> str:
     path_file = getenv(env_name)
 
     return path_file
+
 
 def xlsx_data(path_file, first_col, second_col) -> List[float]:
     df = read_excel(path_file, header=None)
@@ -45,10 +48,12 @@ def xlsx_data(path_file, first_col, second_col) -> List[float]:
 
     return first_col, second_col
 
+
 if __name__ == "__main__":
     """
     Before running the code cd to src folder
     """
+
     main_programm()
 
     hp.hello_world()
