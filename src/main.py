@@ -21,17 +21,17 @@ Init data:
 
 
 def main_programm() -> None:
-    # getting x and D coordinates from excel file
+    # getting x, D coordinates and D_kp and F_kp from excel file
     X_D_PATH_FILE = get_env_path("X_D_PATH_FILE")
 
     x_coord_list = []
     d_list = []
-
     x_coord_list, d_list = get_xlsx_data(X_D_PATH_FILE, x_coord_list, d_list)
 
+    D_kp = x_coord_list.pop(0)
+    F_kp = d_list.pop(0)
+
     # getting parameters of the flow part of the chamber (header 1.3.1 - manual)
-    D_kp = 0.220165
-    F_kp = 0.03807
     ch_res_res = hp.chamber_params(x_coord_list, d_list, D_kp, F_kp)
 
     # writing the results to excel file
