@@ -249,4 +249,5 @@ def heat_flows_calc(
         ]
         for i, el in enumerate(x_coord_list)
     ]
+
     return result
