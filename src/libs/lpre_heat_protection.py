@@ -75,6 +75,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     # TODO -> 1) get init data (h, beta, gamma and etc)
     #         2) n_p_list calc
     #         3) n_p bad res
+    #         4) FINAL RESULT MAY BE INCORRECT -> IT NEEDS RESEARCHES
 
     h = 3
     delta_ct = 1
