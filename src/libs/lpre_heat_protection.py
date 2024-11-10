@@ -88,6 +88,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     #         3) n_p bad res
     #         4) FINAL RESULT MAY BE INCORRECT -> IT NEEDS RESEARCHES
 
+    mode = "rightangle"
     h = 3
     delta_ct = 1
     delta_p = 1
@@ -130,7 +131,6 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     t_list = [pi * diam_avg / n_p_list[i] for i, diam_avg in enumerate(d_avg_list)]
     t_N_list = [t_val * cos(beta) for _, t_val in enumerate(t_list)]
 
-    mode = "rightangle"
     if mode == "shelevoi":
         f_list = [pi * diam_avg * h for _, diam_avg in enumerate(d_avg_list)]
         d_g_list = [2 * h for _ in d_avg_list]
