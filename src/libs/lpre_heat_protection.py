@@ -3,6 +3,8 @@ from collections import deque
 from math import floor
 from numpy import round, pi, sqrt, radians, sin, cos, tan
 
+# from scipy.interpolate import interp1d
+
 
 def hello_world() -> None:
     print("hello world")
@@ -26,6 +28,15 @@ def chamber_params(
     Delta_x_list.appendleft("-")
     Delta_x_list = list(Delta_x_list)
 
+    # How to find xs in correct meaning (via interp):
+    # r_from_d = [i / 2 for i in d_list]
+    # y_interp = interp1d(x_coord_list, r_from_d, kind="linear")
+    # # xnew = arange(x_coord_list[1], x_coord_list[-1], x_coord_list[-1] / 32)
+    # test = [(x_coord_list[i+1] - x_coord_list[i]) for i, el in enumerate(x_coord_list[1:])]
+    # print(test)
+    # ynew = y_interp(test)
+    # print(ynew)
+
     r_from_d = [diam / 2 for diam in d_list]
 
     Delta_xs_list = [
@@ -39,15 +50,15 @@ def chamber_params(
         for i, _ in enumerate(d_list[1:])
     ]
 
-    Delta_S = [
-        round(0.5 * pi * (d_list[i] + d_list[i + 1]) * Delta_xs_list[i], 6)
-        for i, _ in enumerate(Delta_xs_list[1:])
-    ]
-
     Delta_xs_list = deque(Delta_xs_list)
     Delta_xs_list.appendleft("-")
     Delta_xs_list = list(Delta_xs_list)
     Delta_xs_list.append("-")
+
+    Delta_S = [
+        round(0.5 * pi * (d_list[i] + d_list[i + 1]) * Delta_xs_list[i], 6)
+        for i, _ in enumerate(Delta_xs_list[1:])
+    ]
 
     Delta_S = deque(Delta_S)
     Delta_S.appendleft("-")
@@ -100,7 +111,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
 
     n_p_list = []
     for _, el in enumerate(d_list):
-        # stepen = 0
+        # power_of = 0
         # if el / d_min < pow(2, stepen):
         #     n_p_kp * pow(2, stepen)
         # else:

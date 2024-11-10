@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
 from pandas import read_excel, DataFrame, ExcelWriter
-from scipy.interpolate import interp1d
 import libs.lpre_heat_protection as hp
 
 """
@@ -56,14 +55,6 @@ def main_programm() -> None:
         "b",
     ]
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_res)
-
-    # r_from_d = [i / 2 for i in d_list]
-    # y_interp = interp1d(x_coord_list, r_from_d, kind="linear")
-    # # xnew = arange(x_coord_list[1], x_coord_list[-1], x_coord_list[-1] / 32)
-    # test = [(x_coord_list[i+1] - x_coord_list[i]) for i, el in enumerate(x_coord_list[1:])]
-    # print(test)
-    # ynew = y_interp(test)
-    # print(ynew)
 
 
 def get_env_path(env_name: str) -> str:
