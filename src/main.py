@@ -22,6 +22,7 @@ Init data:
 def main_programm() -> None:
     # getting x, D coordinates and D_kp and F_kp from excel file
     X_D_PATH_FILE = get_env_path("X_D_PATH_FILE")
+    RESULT_PATH_FILE = get_env_path("RESULT_PATH_FILE")
 
     x_coord_list = []
     d_list = []
@@ -31,10 +32,7 @@ def main_programm() -> None:
     F_kp = d_list.pop(0)
 
     # getting parameters of the flow part of the chamber (header 1.3.1 - manual)
-    ch_res_res = hp.chamber_params(x_coord_list, d_list, D_kp, F_kp)
-
-    # writing the results to excel file
-    RESULT_PATH_FILE = get_env_path("RESULT_PATH_FILE")
+    ch_resol_res = hp.chamber_params(x_coord_list, d_list, D_kp, F_kp)
     column_names = [
         "x",
         "D",
@@ -45,11 +43,19 @@ def main_programm() -> None:
         "delta(xs)",
         "delta(S)",
     ]
-    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_res_res)
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_resol_res)
 
-    # write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", res)
-
-
+    # getting parameters of the flow part of the chamber (header 1.3.2 - manual)
+    cooling_path_res = hp.cooling_path_params(d_list)
+    column_names = [
+        "n_p",
+        "t",
+        "t_N",
+        "f",
+        "d_г",
+        "b",
+    ]
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_res)
 
     # r_from_d = [i / 2 for i in d_list]
     # y_interp = interp1d(x_coord_list, r_from_d, kind="linear")
@@ -81,11 +87,16 @@ def get_xlsx_data(
 
 
 def write_xlsx_data(
-    PATH_FILE: str, column_names: str, sheet_number: str, mode: str, data: List[List[int]]
+    PATH_FILE: str,
+    column_names: str,
+    sheet_number: str,
+    mode: str,
+    data: List[List[float]],
 ) -> None:
     df = DataFrame(data, columns=column_names)
     with ExcelWriter(PATH_FILE, engine="openpyxl", mode=mode) as writer:
         df.to_excel(writer, sheet_name=sheet_number, index=False)
+
 
 if __name__ == "__main__":
     """
