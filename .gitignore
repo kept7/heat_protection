@@ -4,3 +4,4 @@ __pycache__
 tempCodeRunnerFile.py
 *.xlsx
 !some_*
+file_handler.py

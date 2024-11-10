@@ -44,8 +44,8 @@ def main_programm() -> None:
     ]
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_resol_res)
 
-    # getting parameters of the flow part of the chamber (header 1.3.2 - manual)
-    cooling_path_res = hp.cooling_path_params(d_list)
+    # getting cooling path parameters (header 1.3.2 - manual)
+    cooling_path_params = hp.cooling_path_params(d_list)
     column_names = [
         "n_p",
         "t",
@@ -54,7 +54,21 @@ def main_programm() -> None:
         "d_г",
         "b",
     ]
-    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_res)
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_params)
+
+    # getting heat flows parameters (header 2.2 - manual)
+    heat_flows_res = hp.heat_flows_calc(x_coord_list, d_list)
+    column_names = [
+        "x",
+        "lymbda",
+        "beta",
+        "S",
+        "T_отн_ст",
+        "q * 10^(-6)",
+        "q_л * 10^(-6)",
+        "q_г * 10^(-6)"
+    ]
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "2.2", "a", heat_flows_res)
 
 
 def get_env_path(env_name: str) -> str:
