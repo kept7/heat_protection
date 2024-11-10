@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
 from pandas import read_excel, DataFrame, ExcelWriter
-from matplotlib.pyplot import plot, show
 from scipy.interpolate import interp1d
 import libs.lpre_heat_protection as hp
 
@@ -46,7 +45,11 @@ def main_programm() -> None:
         "delta(xs)",
         "delta(S)",
     ]
-    write_xlsx_data(RESULT_PATH_FILE, column_names, "first_sheet", ch_res_res)
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_res_res)
+
+    # write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", res)
+
+
 
     # r_from_d = [i / 2 for i in d_list]
     # y_interp = interp1d(x_coord_list, r_from_d, kind="linear")
@@ -55,9 +58,6 @@ def main_programm() -> None:
     # print(test)
     # ynew = y_interp(test)
     # print(ynew)
-
-    # plot(x_coord_list[1:], ynew, 'o--')
-    # show()
 
 
 def get_env_path(env_name: str) -> str:
@@ -81,13 +81,11 @@ def get_xlsx_data(
 
 
 def write_xlsx_data(
-    PATH_FILE: str, column_names: str, sheet_number: str, result: List[List[int]]
+    PATH_FILE: str, column_names: str, sheet_number: str, mode: str, data: List[List[int]]
 ) -> None:
-    df = DataFrame(result, columns=column_names)
-    writer = ExcelWriter(PATH_FILE, engine="xlsxwriter")
-    df.to_excel(writer, sheet_name=sheet_number, index=False)
-    writer.close()
-
+    df = DataFrame(data, columns=column_names)
+    with ExcelWriter(PATH_FILE, engine="openpyxl", mode=mode) as writer:
+        df.to_excel(writer, sheet_name=sheet_number, index=False)
 
 if __name__ == "__main__":
     """
