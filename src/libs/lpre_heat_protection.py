@@ -75,7 +75,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     # TODO -> 1) get init data (h, beta, gamma and etc)
     #         2) decrease complexity of n_p_list calc
 
-    mode = "gofra"
+    mode = "shelevoi"
     h = 0.003
     delta_ct = 0.001
     delta_p = 0.001
