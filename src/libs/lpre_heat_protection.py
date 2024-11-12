@@ -1,7 +1,6 @@
 from typing import List
 from collections import deque
-from math import floor
-from numpy import round, pi, sqrt, radians, sin, cos, tan
+from numpy import pi, round, floor, sqrt, radians, sin, cos, tan
 
 
 def hello_world() -> None:
