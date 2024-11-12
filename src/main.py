@@ -5,18 +5,6 @@ from dotenv import load_dotenv
 from pandas import read_excel, DataFrame, ExcelWriter
 import libs.lpre_heat_protection as hp
 
-"""
-Init data:
-    - engine type
-    - thrust, chambers count
-    - fuel+ox, mass flow rate
-    - Km, alpha
-    - comb cham pres
-    - nozzle exit pres
-    - comb cham temp
-    - diametr of nozzle, etcs
-"""
-
 
 def main_programm() -> None:
     # getting x, D coordinates and D_kp and F_kp from excel file
