@@ -28,15 +28,6 @@ def chamber_params(
     Delta_x_list.appendleft("-")
     Delta_x_list = list(Delta_x_list)
 
-    # How to find xs in correct meaning (via interp):
-    # r_from_d = [i / 2 for i in d_list]
-    # y_interp = interp1d(x_coord_list, r_from_d, kind="linear")
-    # # xnew = arange(x_coord_list[1], x_coord_list[-1], x_coord_list[-1] / 32)
-    # test = [(x_coord_list[i+1] - x_coord_list[i]) for i, el in enumerate(x_coord_list[1:])]
-    # print(test)
-    # ynew = y_interp(test)
-    # print(ynew)
-
     r_from_d = [diam / 2 for diam in d_list]
 
     Delta_xs_list = [
@@ -86,18 +77,19 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     # TODO -> 1) get init data (h, beta, gamma and etc)
     #         2) n_p_list calc
     #         3) n_p bad res
-    #         4) FINAL RESULT MAY BE INCORRECT -> IT NEEDS RESEARCHES
+    #         4) Rewrite t_list, that t_val < 7 -> ponyal
+    #         5) FINAL RESULT MAY BE INCORRECT -> IT NEEDS RESEARCHES
 
     mode = "rightangle"
-    h = 3
-    delta_ct = 1
-    delta_p = 1
-    delta_ct_HAP = 3
-    beta = radians(15)
+    h = 0.003
+    delta_ct = 0.001
+    delta_p = 0.001
+    delta_ct_HAP = 0.003
+    beta = radians(0)
     gamma = radians(90)
     h_p = (h - delta_p) / sin(gamma)
 
-    t_N_min = 2.5
+    t_N_min = 0.0025
 
     d_avg_list = [
         diam * (1 + (2 * delta_ct + h) / diam) for _, diam in enumerate(d_list)
@@ -110,6 +102,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
     n_p_min = round(n_p_kp / 2) if n_p_kp % 2 != 0 else n_p_kp
     t_N_min = pi * d_avg_min * cos(beta) / n_p_min
 
+    t_list = [pi * diam_avg / n_p_list[i] for i, diam_avg in enumerate(d_avg_list)]
     n_p_list = []
     for _, el in enumerate(d_list):
         # power_of = 0
@@ -128,7 +121,6 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
         elif round(el / d_kp, 2) >= 16 and round(el / d_kp, 2) < 32:
             n_p_list.append(n_p_min * 16)
 
-    t_list = [pi * diam_avg / n_p_list[i] for i, diam_avg in enumerate(d_avg_list)]
     t_N_list = [t_val * cos(beta) for _, t_val in enumerate(t_list)]
 
     if mode == "shelevoi":
