@@ -15,6 +15,8 @@ def main_programm() -> None:
     x_coord_list = []
     d_list = []
     W_list = []
+    Cp_t_og_list = []
+    Cp_t_ct_list = []
     p_list = []
     mu_list = []
     (
@@ -34,16 +36,23 @@ def main_programm() -> None:
         t_N_min,
         k,
         Pr,
-        epsilon,
         alpha,
         T_ct_g,
         T_ct_o,
         mu_og,
         R_og,
-        Cp_t_og,
-        Cp_t_ct,
         m_t,
-    ) = get_xlsx_data(X_D_PATH_FILE, x_coord_list, d_list, W_list, p_list, mu_list)
+        T_k,
+    ) = get_xlsx_data(
+        X_D_PATH_FILE,
+        x_coord_list,
+        d_list,
+        W_list,
+        Cp_t_og_list,
+        Cp_t_ct_list,
+        p_list,
+        mu_list,
+    )
 
     index_kp = d_list.index(D_kp)
     F_kp = (pow((d_list[index_kp]), 2)) * pi / 4
@@ -77,16 +86,35 @@ def main_programm() -> None:
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_params)
 
     # # getting heat flows parameters (header 2.2 - manual)
-    # heat_flows_res = hp.heat_flows_calc(x_coord_list, d_list, W_list, index_kp, k, Pr)
+    F_kc = pow(d_list[0], 2) * pi / 4
+    heat_flows_res = hp.heat_flows_calc(
+        x_coord_list,
+        d_list,
+        W_list,
+        Cp_t_og_list,
+        Cp_t_ct_list,
+        mu_list,
+        p_list,
+        F_kc,
+        F_kp,
+        index_kp,
+        k,
+        T_ct_g,
+        T_ct_o,
+        mu_og,
+        R_og,
+        Pr,
+        T_k,
+    )
     # column_names = [
     #     "x",
     #     "lymbda",
     #     "beta",
     #     "S",
     #     "T_отн_ст",
-    #     "q * 10^(-6)",
+    #     "q_к * 10^(-6)",
     #     "q_л * 10^(-6)",
-    #     "q_г * 10^(-6)"
+    #     "q_сум * 10^(-6)"
     # ]
     # write_xlsx_data(RESULT_PATH_FILE, column_names, "2.2", "a", heat_flows_res)
 
@@ -106,6 +134,8 @@ def get_xlsx_data(
     third_list: List[None],
     fourth_list: List[None],
     fifth_list: List[None],
+    sixth_lsit: List[None],
+    seventh_list: List[None],
 ) -> List[float]:
     df = read_excel(path_file, header=None)
 
@@ -114,8 +144,10 @@ def get_xlsx_data(
             first_list.append(round(row.tolist()[0], 6))
             second_list.append(round(row.tolist()[1], 6))
             third_list.append(round(row.tolist()[11], 6))
-            fourth_list.append(round(row.tolist()[22], 6))
-            fifth_list.append(round(row.tolist()[23], 6))
+            fourth_list.append(round(row.tolist()[19], 6))
+            fifth_list.append(round(row.tolist()[20], 6))
+            sixth_lsit.append(round(row.tolist()[21], 6))
+            seventh_list.append(round(row.tolist()[22], 6))
         if index == 1:
             D_kp = round(row.tolist()[2], 6)
             mode = row.tolist()[3]
@@ -128,15 +160,13 @@ def get_xlsx_data(
             t_N_min = row.tolist()[10]
             k = row.tolist()[12]
             Pr = row.tolist()[13]
-            epsilon = row.tolist()[14]
-            alpha = row.tolist()[15]
-            T_ct_g = row.tolist()[16]
-            T_ct_o = row.tolist()[17]
-            mu_og = row.tolist()[18]
-            R_og = row.tolist()[19]
-            Cp_t_og = row.tolist()[20]
-            Cp_t_ct = row.tolist()[21]
-            m_t = row.tolist()[24]
+            alpha = row.tolist()[14]
+            T_ct_g = row.tolist()[15]
+            T_ct_o = row.tolist()[16]
+            mu_og = row.tolist()[17]
+            R_og = row.tolist()[18]
+            m_t = row.tolist()[23]
+            T_k = row.tolist()[24]
 
     return (
         first_list,
@@ -144,6 +174,8 @@ def get_xlsx_data(
         third_list,
         fourth_list,
         fifth_list,
+        sixth_lsit,
+        seventh_list,
         D_kp,
         mode,
         h,
@@ -155,15 +187,13 @@ def get_xlsx_data(
         t_N_min,
         k,
         Pr,
-        epsilon,
         alpha,
         T_ct_g,
         T_ct_o,
         mu_og,
         R_og,
-        Cp_t_og,
-        Cp_t_ct,
         m_t,
+        T_k,
     )
 
 

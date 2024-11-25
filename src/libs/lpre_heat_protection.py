@@ -168,12 +168,26 @@ def heat_flows_calc(
     x_coord_list: List[float],
     d_list: List[float],
     W_list: List[float],
+    Cp_t_og_list: List[float],
+    Cp_t_ct_list: List[float],
+    mu_list: List[float],
+    p_list: List[float],
+    F_kc: float,
+    F_kp: float,
     index_kp: int,
     k: float,
+    T_ct_g: float,
+    T_ct_o: float,
+    mu_og: float,
+    R_og: float,
     Pr: float,
+    T_k: float,
 ) -> List[List[float]]:
 
-    epsilon = 1  # if F_kc / F_kp > 3.5 else ?
+    epsilon = 1 if F_kc / F_kp > 3.5 else 0.8  # value else 0.8?
+    c_o = 5.67
+    epsilon_ct = 0.8
+    phi = 0.9
 
     alpha_OTH = (
         1.813 * pow((2 / (k + 1)), (0.85 / (k - 1))) * pow((2 * k / (k + 1)), 0.425)
@@ -181,45 +195,73 @@ def heat_flows_calc(
 
     W_kp = W_list[index_kp]
 
-    z_OTH = [
+    z_OTH_list = [
         pow(
             1.769
             * (
                 (
                     1
-                    - pow(beta_list[i], 2)
-                    + pow(beta_list[i], 2)
+                    - pow(beta, 2)
+                    + pow(beta, 2)
                     * (
                         1
                         - 0.086
-                        * (
-                            (1 - pow(beta_list[i], 2))
-                            / (1 - T_ct_OTH - 0.1 * pow(beta_list[i], 2))
-                        )
+                        * ((1 - pow(beta, 2)) / (1 - T_ct_OTH[i] - 0.1 * pow(beta, 2)))
                     )
                 )
-                / (1 - T_ct_OTH - 0.1 * pow(beta_list[i], 2))
+                / (1 - T_ct_OTH[i] - 0.1 * pow(beta, 2))
             ),
             0.54,
         )
-        for i, T_ct_OTH in enumerate(T_ct_OTH_list)
+        for i, beta in enumerate(beta_list)
     ]
 
-    lymbda_list = [w / W_kp for _, w in enumerate(w_list)]
+    lymbda_list = [W / W_kp for _, W in enumerate(W_list)]
 
     beta_list = [
         lymbda * sqrt((k - 1) / (k + 1)) for _, lymbda in enumerate(lymbda_list)
     ]
 
-    S_list = []
+    B_list = [
+        0.4842 * alpha_OTH * 0.01352 * pow(Z, 0.075) for _, Z in enumerate(z_OTH_list)
+    ]
 
-    T_ct_OTH_list = []
+    C_p_cp_list = [
+        0.5 * (Cp_t_og_list[i] + Cp_t_ct) for i, Cp_t_ct in enumerate(Cp_t_ct_list)
+    ]
 
-    q_list = []
+    S_list = [
+        (2.065 * C_p_cp * (T_ct_o - T_ct_g) * pow(mu_og, 0.15))
+        / (
+            pow(R_og * T_ct_o, 0.425)
+            * pow(1 + T_ct_OTH, 0.595)
+            * pow(3 + T_ct_OTH, 0.15)
+        )
+        for _, C_p_cp in enumerate(C_p_cp_list)
+    ]
 
-    q_l_list = []
+    T_ct_OTH = [T_ct_g / T_ct_o for _, _ in enumerate(beta_list)]
 
-    q_g_list = []
+    q_k_list = [
+        B_list[i]
+        * (
+            ((1 - pow(beta_list[i], 2)) * epsilon * pow(p_list[0], 0.85))
+            / (pow(d_list[i] / d_list[index_kp], 1.82) * pow(d_list[index_kp], 0.15))
+        )
+        * (S_list[i] / pow(Pr, 0.58))
+        for i, _ in enumerate(d_list)
+    ]
+
+    epsilon_st_ef = (epsilon_ct + 1) / 2
+    q_l_km = epsilon_st_ef * epsilon_g * c_o * pow(T_k / 100, 4)
+
+    ro_list = [p_list[i] / ((8314 / mu) * T_k) for i, mu in enumerate(mu_list)]
+
+    q_l_kc = phi * q_l_km
+
+    q_l_list = [ for _, d in enumerate(d_list)]
+
+    q_sum_list = [q_k + q_l_list[i] for i, q_k in enumerate(q_k_list)]
 
     result = [
         [
@@ -227,10 +269,10 @@ def heat_flows_calc(
             lymbda_list[i],
             beta_list[i],
             S_list[i],
-            T_ct_OTH_list[i],
-            q_list[i],
+            T_ct_OTH[i],
+            q_k_list[i],
             q_l_list[i],
-            q_g_list[i],
+            q_sum_list[i],
         ]
         for i, el in enumerate(x_coord_list)
     ]
