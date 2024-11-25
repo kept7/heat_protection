@@ -70,20 +70,21 @@ def chamber_params(
     return result
 
 
-def cooling_path_params(d_list: List[float]) -> List[List[float]]:
-    # TODO -> 1) get init data (h, beta, gamma and etc)
+def cooling_path_params(
+    d_list: List[float],
+    mode: int,
+    h: float,
+    delta_ct: float,
+    delta_p: float,
+    delta_ct_HAP: float,
+    beta: float,
+    gamma: float,
+    t_N_min: float,
+) -> List[List[float]]:
+    # TODO ->
     #         2) decrease complexity of n_p_list calc
 
-    mode = "rightangle"
-    h = 0.003
-    delta_ct = 0.001
-    delta_p = 0.001
-    delta_ct_HAP = 0.003
-    beta = radians(0)
-    gamma = radians(90)
     h_p = (h - delta_p) / sin(gamma)
-
-    t_N_min = 0.0025
 
     d_avg_list = [
         diam * (1 + (2 * delta_ct + h) / diam) for _, diam in enumerate(d_list)
@@ -116,11 +117,11 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
         t_list.append(round(t_val, 4))
         t_N_list.append(round(t_N, 4))
 
-    if mode == "shelevoi":
+    if mode == 1:
         f_list = [pi * diam_avg * h for _, diam_avg in enumerate(d_avg_list)]
         d_g_list = [2 * h for _ in d_avg_list]
         b_list = ["-" for _ in d_avg_list]
-    elif mode == "rightangle":
+    elif mode == 2:
         f_list = [
             t_N * h * (1 - delta_p / t_N) * n_p_list[i]
             for i, t_N in enumerate(t_N_list)
@@ -130,7 +131,7 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
             for _, t_N in enumerate(t_N_list)
         ]
         b_list = ["-" for _ in d_avg_list]
-    elif mode == "gofra":
+    elif mode == 3:
         b_list = [t_N - h / tan(gamma) for _, t_N in enumerate(t_N_list)]
         f_list = [
             n_p_list[i]
@@ -164,22 +165,21 @@ def cooling_path_params(d_list: List[float]) -> List[List[float]]:
 
 
 def heat_flows_calc(
-    x_coord_list: List[float], d_list: List[float]
+    x_coord_list: List[float],
+    d_list: List[float],
+    W_list: List[float],
+    index_kp: int,
+    k: float,
+    Pr: float,
 ) -> List[List[float]]:
 
-    k = 1.2
-    Pr = 0.75
     epsilon = 1  # if F_kc / F_kp > 3.5 else ?
-
-    d_kp = min(d_list)
-    kp_index = d_list.index(d_kp)
 
     alpha_OTH = (
         1.813 * pow((2 / (k + 1)), (0.85 / (k - 1))) * pow((2 * k / (k + 1)), 0.425)
     )
 
-    w_list = []  # how to define: as init or calc?
-    w_kp = w_list[kp_index]
+    W_kp = W_list[index_kp]
 
     z_OTH = [
         pow(
@@ -205,7 +205,7 @@ def heat_flows_calc(
         for i, T_ct_OTH in enumerate(T_ct_OTH_list)
     ]
 
-    lymbda_list = [w / w_kp for _, w in enumerate(w_list)]
+    lymbda_list = [w / W_kp for _, w in enumerate(w_list)]
 
     beta_list = [
         lymbda * sqrt((k - 1) / (k + 1)) for _, lymbda in enumerate(lymbda_list)
