@@ -1,6 +1,8 @@
 from typing import List
 from collections import deque
-from numpy import pi, round, floor, sqrt, radians, sin, cos, tan
+from numpy import pi, round, floor, sqrt, sin, cos, tan
+from sympy.solvers import nsolve
+from sympy import Symbol
 
 
 def hello_world() -> None:
@@ -67,7 +69,7 @@ def chamber_params(
         for i, _ in enumerate(x_coord_list)
     ]
 
-    return result
+    return result, F_ratio_list
 
 
 def cooling_path_params(
@@ -167,33 +169,58 @@ def cooling_path_params(
 def heat_flows_calc(
     x_coord_list: List[float],
     d_list: List[float],
-    W_list: List[float],
-    Cp_t_og_list: List[float],
-    Cp_t_ct_list: List[float],
-    mu_list: List[float],
-    p_list: List[float],
-    F_kc: float,
-    F_kp: float,
     index_kp: int,
     k: float,
+    Cp_t_og: float,
+    Cp_t_ct: float,
     T_ct_g: float,
     T_ct_o: float,
     mu_og: float,
     R_og: float,
     Pr: float,
+    p_k: float,
     T_k: float,
+    phi: float,
+    epsilon_h2o: float,
+    epsilon_co2: float,
+    epsilon_ct: float,
 ) -> List[List[float]]:
 
-    epsilon = 1 if F_kc / F_kp > 3.5 else 0.8  # value else 0.8?
+    epsilon = 1
     c_o = 5.67
-    epsilon_ct = 0.8
-    phi = 0.9
 
     alpha_OTH = (
         1.813 * pow((2 / (k + 1)), (0.85 / (k - 1))) * pow((2 * k / (k + 1)), 0.425)
     )
 
-    W_kp = W_list[index_kp]
+    # # Doesn't work! Process can't resolve due to malloc error
+    # lymbda_list = []
+    # for i, d in enumerate(d_list):
+    #     init_guess = 1.01
+    #     if (x_coord_list[i] < x_coord_list[index_kp]):
+    #         init_guess = 0.3
+    #     eq_res = gdf_functions(k, d / d_list[index_kp], init_guess)
+    #     if (x_coord_list[i] < x_coord_list[index_kp]):
+    #         # lymbda_list.append(round(eq_res.pop(1), 6)) - for solve()
+    #         lymbda_list.append(eq_res)
+    #     else:
+    #         # lymbda_list.append(round(eq_res.pop(2), 6)) - for solve()
+    #         lymbda_list.append(eq_res)
+    #     print(lymbda_list[i])
+
+    lymbda_list = []
+    for i, d in enumerate(d_list):
+        if (x_coord_list[i] < x_coord_list[index_kp]):
+            lymbda_list.append(round(get_lambda( pow((d / d_list[index_kp]), -2), k, "Subsonic"), 6))
+        else:
+            lymbda_list.append(round(get_lambda( pow((d / d_list[index_kp]), -2), k, "Supersonic"), 6))
+        print(lymbda_list[i])
+
+    beta_list = [
+        lymbda * sqrt((k - 1) / (k + 1)) for _, lymbda in enumerate(lymbda_list)
+    ]
+
+    T_ct_OTH = [T_ct_g / T_ct_o for _, _ in enumerate(beta_list)]
 
     z_OTH_list = [
         pow(
@@ -216,50 +243,53 @@ def heat_flows_calc(
         for i, beta in enumerate(beta_list)
     ]
 
-    lymbda_list = [W / W_kp for _, W in enumerate(W_list)]
-
-    beta_list = [
-        lymbda * sqrt((k - 1) / (k + 1)) for _, lymbda in enumerate(lymbda_list)
-    ]
-
     B_list = [
         0.4842 * alpha_OTH * 0.01352 * pow(Z, 0.075) for _, Z in enumerate(z_OTH_list)
     ]
 
     C_p_cp_list = [
-        0.5 * (Cp_t_og_list[i] + Cp_t_ct) for i, Cp_t_ct in enumerate(Cp_t_ct_list)
+        0.5 * (Cp_t_og + Cp_t_ct) for _, _ in enumerate(x_coord_list)
     ]
 
     S_list = [
         (2.065 * C_p_cp * (T_ct_o - T_ct_g) * pow(mu_og, 0.15))
         / (
             pow(R_og * T_ct_o, 0.425)
-            * pow(1 + T_ct_OTH, 0.595)
-            * pow(3 + T_ct_OTH, 0.15)
+            * pow(1 + T_ct_OTH[i], 0.595)
+            * pow(3 + T_ct_OTH[i], 0.15)
         )
-        for _, C_p_cp in enumerate(C_p_cp_list)
+        for i, C_p_cp in enumerate(C_p_cp_list)
     ]
-
-    T_ct_OTH = [T_ct_g / T_ct_o for _, _ in enumerate(beta_list)]
 
     q_k_list = [
         B_list[i]
         * (
-            ((1 - pow(beta_list[i], 2)) * epsilon * pow(p_list[0], 0.85))
+            ((1 - pow(beta_list[i], 2)) * epsilon * pow(p_k, 0.85))
             / (pow(d_list[i] / d_list[index_kp], 1.82) * pow(d_list[index_kp], 0.15))
         )
         * (S_list[i] / pow(Pr, 0.58))
         for i, _ in enumerate(d_list)
     ]
 
+    epsilon_g = epsilon_h2o + epsilon_co2 - epsilon_h2o * epsilon_co2
     epsilon_st_ef = (epsilon_ct + 1) / 2
     q_l_km = epsilon_st_ef * epsilon_g * c_o * pow(T_k / 100, 4)
 
-    ro_list = [p_list[i] / ((8314 / mu) * T_k) for i, mu in enumerate(mu_list)]
-
     q_l_kc = phi * q_l_km
 
-    q_l_list = [ for _, d in enumerate(d_list)]
+    q_l_list = []
+    for i, x_coord in enumerate(x_coord_list):
+        if x_coord <= 0.05:
+            q_l_list.append(round(0.25 * q_l_kc, 6))
+        if x_coord > 0.05 and x_coord < x_coord_list[index_kp] and d_list[i] / d_list[index_kp] <= 1.2:
+            q_l_list.append(round(q_l_kc, 6))
+        if d_list[i] / d_list[index_kp] >= 1.2 and x_coord < x_coord_list[index_kp]:
+            q_l_list.append(round(q_l_kc * (1 - 12.5 * pow((1.2 - d_list[i] / d_list[index_kp]), 2)), 6))
+        if x_coord == x_coord_list[index_kp]:
+            q_l_list.append(round(0.5 * q_l_kc, 6))
+        if x_coord > x_coord_list[index_kp]:
+            q_l_list.append(round(0.5 * q_l_kc * d_list[i] / d_list[index_kp], 6))
+        
 
     q_sum_list = [q_k + q_l_list[i] for i, q_k in enumerate(q_k_list)]
 
@@ -278,3 +308,73 @@ def heat_flows_calc(
     ]
 
     return result
+
+
+def gdf_functions(k, d_ratio, init_guess):
+    x = Symbol('x', positive=True)
+    return nsolve(pow((k + 1) / 2, 1 / (k - 1)) * x * pow(1 - ((k - 1) / (k + 1)) * pow(x, 2), 1 / (k - 1)) - pow(d_ratio, -2), x, init_guess)
+
+
+def heat_in_cooling_path_calc():
+    coolant_temp_along_path_calc()
+    heat_transfer_coef_calc()
+    fin_coef_calc()
+
+    result = [
+    #     [
+    #         el,
+    #         lymbda_list[i],
+    #         beta_list[i],
+    #         S_list[i],
+    #         T_ct_OTH[i],
+    #         q_k_list[i],
+    #         q_l_list[i],
+    #         q_sum_list[i],
+    #     ]
+    #     for i, el in enumerate(x_coord_list)
+    ]
+
+    return result
+
+def coolant_temp_along_path_calc():
+    return
+
+def heat_transfer_coef_calc():
+    return
+
+def fin_coef_calc():
+    fin_efficiency_graph()
+    return
+
+def fin_efficiency_graph():
+    return
+
+def get_lambda(q: float, k: float, key: str) -> float:
+
+    if (key == "Subsonic"):
+        lmbd  = 0.3
+    elif (key == "Supersonic"):
+        lmbd  = 1.01
+    while (True):
+        if (key == "Subsonic"):
+            f = lmbd * (1 - (k - 1) / (k + 1) * lmbd ** 2) ** (1 / (k - 1)) * ((k + 1) / 2) ** (1 / (k - 1)) - q
+            delta_lamda = 0.01
+            fd = ((lmbd + delta_lamda) * (1 - (k - 1) / (k + 1) * (lmbd + delta_lamda) ** 2) ** (1 / (k - 1)) * (
+                        (k + 1) / 2) ** (1 / (k - 1))) / delta_lamda
+        elif (key == "Supersonic"):
+            f = lmbd * (1 - (k - 1) / (k + 1) * lmbd ** 2) ** (1 / (k - 1)) * ((k + 1) / 2) ** (1 / (k - 1)) - q
+            delta_lamda = 0.01
+            fd = ((lmbd - delta_lamda) * (1 - (k - 1) / (k + 1) * (lmbd - delta_lamda) ** 2) ** (1 / (k - 1)) * (
+                        (k + 1) / 2) ** (1 / (k - 1))) / -delta_lamda
+
+
+        lambda1 = lmbd - f/fd
+
+        if (abs((lambda1 - lmbd) / lambda1) < 0.000001):
+                lambda1
+                break
+        else:
+            lmbd = lambda1
+
+
+    return lambda1

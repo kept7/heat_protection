@@ -14,17 +14,9 @@ def main_programm() -> None:
 
     x_coord_list = []
     d_list = []
-    W_list = []
-    Cp_t_og_list = []
-    Cp_t_ct_list = []
-    p_list = []
-    mu_list = []
     (
         x_coord_list,
         d_list,
-        W_list,
-        p_list,
-        mu_list,
         D_kp,
         mode,
         h,
@@ -41,24 +33,26 @@ def main_programm() -> None:
         T_ct_o,
         mu_og,
         R_og,
-        m_t,
+        Cp_t_og,
+        Cp_t_ct,
+        phi,
+        p_k,
         T_k,
+        epsilon_h2o,
+        epsilon_co2,
+        epsilon_ct,
     ) = get_xlsx_data(
         X_D_PATH_FILE,
         x_coord_list,
-        d_list,
-        W_list,
-        Cp_t_og_list,
-        Cp_t_ct_list,
-        p_list,
-        mu_list,
+        d_list
     )
 
     index_kp = d_list.index(D_kp)
     F_kp = (pow((d_list[index_kp]), 2)) * pi / 4
 
+
     # getting parameters of the flow part of the chamber (header 1.3.1 - manual)
-    ch_resol_res = hp.chamber_params(x_coord_list, d_list, D_kp, F_kp)
+    ch_resol_res, F_ratio_list = hp.chamber_params(x_coord_list, d_list, D_kp, F_kp)
     column_names = [
         "x",
         "D",
@@ -70,6 +64,7 @@ def main_programm() -> None:
         "delta(S)",
     ]
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_resol_res)
+
 
     # getting cooling path parameters (header 1.3.2 - manual)
     cooling_path_params = hp.cooling_path_params(
@@ -85,38 +80,60 @@ def main_programm() -> None:
     ]
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.2", "a", cooling_path_params)
 
-    # # getting heat flows parameters (header 2.2 - manual)
-    F_kc = pow(d_list[0], 2) * pi / 4
+
+    # getting heat flows parameters (header 2.2 - manual)
     heat_flows_res = hp.heat_flows_calc(
         x_coord_list,
         d_list,
-        W_list,
-        Cp_t_og_list,
-        Cp_t_ct_list,
-        mu_list,
-        p_list,
-        F_kc,
-        F_kp,
         index_kp,
         k,
+        Cp_t_og,
+        Cp_t_ct,
         T_ct_g,
         T_ct_o,
         mu_og,
         R_og,
         Pr,
+        p_k,
         T_k,
+        phi,
+        epsilon_h2o,
+        epsilon_co2,
+        epsilon_ct,
     )
+
+    column_names = [
+        "x",
+        "lymbda",
+        "beta",
+        "S",
+        "T_отн_ст",
+        "q_к * 10^(-6)",
+        "q_л * 10^(-6)",
+        "q_сум * 10^(-6)"
+    ]
+    write_xlsx_data(RESULT_PATH_FILE, column_names, "2.2", "a", heat_flows_res)
+
+
+    # # Calculation of heat transfer in the cooling path (header 3.1, 3.2, 3.3 - manual)
+    # res = hp.heat_in_cooling_path_calc(
+    # )
+    # 
+    
     # column_names = [
-    #     "x",
-    #     "lymbda",
-    #     "beta",
-    #     "S",
-    #     "T_отн_ст",
-    #     "q_к * 10^(-6)",
-    #     "q_л * 10^(-6)",
-    #     "q_сум * 10^(-6)"
+    #     "Т_охл",
+    #     "delta_Cp_OTH",
+    #     "Cp_охл",
+    #     "lymbda_охл",
+    #     "mu_охл",
+    #     "К_охл",
+    #     "rho_охл",
+    #     "U_охл"
+    #     "alpha_охл"
+    #     "E"
+    #     "eta_р"
     # ]
-    # write_xlsx_data(RESULT_PATH_FILE, column_names, "2.2", "a", heat_flows_res)
+    # write_xlsx_data(RESULT_PATH_FILE, column_names, "3.3", "a", res)
 
 
 def get_env_path(env_name: str) -> str:
@@ -131,11 +148,6 @@ def get_xlsx_data(
     path_file: str,
     first_list: List[None],
     second_list: List[None],
-    third_list: List[None],
-    fourth_list: List[None],
-    fifth_list: List[None],
-    sixth_lsit: List[None],
-    seventh_list: List[None],
 ) -> List[float]:
     df = read_excel(path_file, header=None)
 
@@ -143,11 +155,6 @@ def get_xlsx_data(
         if index > 0:
             first_list.append(round(row.tolist()[0], 6))
             second_list.append(round(row.tolist()[1], 6))
-            third_list.append(round(row.tolist()[11], 6))
-            fourth_list.append(round(row.tolist()[19], 6))
-            fifth_list.append(round(row.tolist()[20], 6))
-            sixth_lsit.append(round(row.tolist()[21], 6))
-            seventh_list.append(round(row.tolist()[22], 6))
         if index == 1:
             D_kp = round(row.tolist()[2], 6)
             mode = row.tolist()[3]
@@ -158,24 +165,25 @@ def get_xlsx_data(
             beta = radians(row.tolist()[8])
             gamma = radians(row.tolist()[9])
             t_N_min = row.tolist()[10]
-            k = row.tolist()[12]
-            Pr = row.tolist()[13]
-            alpha = row.tolist()[14]
-            T_ct_g = row.tolist()[15]
-            T_ct_o = row.tolist()[16]
-            mu_og = row.tolist()[17]
-            R_og = row.tolist()[18]
-            m_t = row.tolist()[23]
-            T_k = row.tolist()[24]
-
+            k = row.tolist()[11]
+            Pr = row.tolist()[12]
+            alpha = row.tolist()[13]
+            T_ct_g = row.tolist()[14]
+            T_ct_o = row.tolist()[15]
+            mu_og = row.tolist()[16]
+            R_og = row.tolist()[17]
+            Cp_t_og = row.tolist()[18]
+            Cp_t_ct = row.tolist()[19]
+            phi = row.tolist()[20]
+            p_k = row.tolist()[21]
+            T_k = row.tolist()[22]
+            epsilon_h2o = row.tolist()[23]
+            epsilon_co2 = row.tolist()[24]
+            # epsilon_ct = row.tolist()[25]
+    epsilon_ct = 0.8
     return (
         first_list,
         second_list,
-        third_list,
-        fourth_list,
-        fifth_list,
-        sixth_lsit,
-        seventh_list,
         D_kp,
         mode,
         h,
@@ -192,8 +200,14 @@ def get_xlsx_data(
         T_ct_o,
         mu_og,
         R_og,
-        m_t,
+        Cp_t_og,
+        Cp_t_ct,
+        phi,
+        p_k,
         T_k,
+        epsilon_h2o,
+        epsilon_co2,
+        epsilon_ct,
     )
 
 
@@ -213,7 +227,9 @@ if __name__ == "__main__":
     """
     Before running the code cd to src folder
     """
-
+    # k = 1.2
+    # key = "Subsonic"
+    # print(hp.get_lambda(1.999954315, k, key))    
     main_programm()
 
     hp.hello_world()
