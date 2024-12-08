@@ -2,6 +2,6 @@
 __pycache__
 .env
 tempCodeRunnerFile.py
-*.xlsx
 !some_*
 file_handler.py
+x_d_coord_kirill.xlsx
