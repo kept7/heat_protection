@@ -263,10 +263,10 @@ def heat_flows_calc(
         0.4842 * alpha_OTH * 0.01352 * pow(Z, 0.075) for _, Z in enumerate(z_OTH_list)
     ]
 
-    C_p_cp_list = [0.5 * (Cp_t_og + Cp_t_ct) * 1000 for _, _ in enumerate(x_coord_list)]
+    C_p_cp_list = [0.5 * (Cp_t_og + Cp_t_ct) for _, _ in enumerate(x_coord_list)]
 
     S_list = [
-        (2.065 * C_p_cp * (T_ct_o - T_ct_g) * pow(mu_og / 1000000, 0.15))
+        (2.065 * C_p_cp * (T_ct_o - T_ct_g) * pow(mu_og, 0.15))
         / (
             pow(R_og * T_ct_o, 0.425)
             * pow(1 + T_ct_OTH[i], 0.595)
@@ -401,7 +401,7 @@ def heat_in_cooling_path_calc(
                 delta_T_1 = delta_T_2
             else:
                 T_oxl_list = deque(T_oxl_list)
-                T_oxl_list.appendleft(round(T_cp_2 + delta_T_2, 6))
+                T_oxl_list.appendleft(round(T_oxl_list[i_enter - 2 - i] + delta_T_2, 6))
                 T_oxl_list = list(T_oxl_list)
 
                 delta_cp_list = deque(delta_cp_list)
@@ -899,17 +899,17 @@ def temperature_second_approx(
 ) -> List[float]:
 
     S_list_sec_approx_list = [
-        (2.065 * Cp_oxl * (T_ct_o - T_ct_g_list[i]) * pow(mu_og / 1000000, 0.15))
+        (2.065 * Cp_oxl * (T_ct_o - T_ct_g_list[i]) * pow(mu_og, 0.15))
         / (
             pow(R_og * T_ct_o, 0.425)
-            * pow(1 + T_ct_g_list[i], 0.595)
-            * pow(3 + T_ct_g_list[i], 0.15)
+            * pow(1 + T_ct_g_list[i] / T_ct_o, 0.595)
+            * pow(3 + T_ct_g_list[i] / T_ct_o, 0.15)
         )
         for i, Cp_oxl in enumerate(cp_oxl_list)
     ]
 
-    q_k_sec_approx_list = [q_k_var * 1.1 for _, q_k_var in enumerate(q_k_list)]
-    # q_k_sec_approx = [q_k_var * S_list_sec_approx[i] / S_list[i] for i, q_k_var in enumerate(q_k_list)]
+    # q_k_sec_approx_list = [q_k_var * 1.1 for _, q_k_var in enumerate(q_k_list)]
+    q_k_sec_approx_list = [q_k_var * S_list_sec_approx_list[i] / S_list[i] for i, q_k_var in enumerate(q_k_list)]
 
     return q_k_sec_approx_list, S_list_sec_approx_list
 
