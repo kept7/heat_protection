@@ -72,7 +72,7 @@ def main_programm() -> None:
     write_xlsx_data(RESULT_PATH_FILE, column_names, "1.3.1", "w", ch_resol_res)
 
     # getting cooling path parameters (header 1.3.2 - manual)
-    cooling_path_params, t_list, f_list, d_g_list, h_p = hp.cooling_path_params(
+    cooling_path_params, t_N_list, f_list, d_g_list, h_p = hp.cooling_path_params(
         d_list, mode, h, delta_ct, delta_p, delta_ct_HAP, beta, gamma, t_N_min
     )
     column_names = [
@@ -134,7 +134,7 @@ def main_programm() -> None:
         Delta_S,
         f_list,
         d_g_list,
-        t_list,
+        t_N_list,
         i_enter,
         i_exit,
         T_init,
@@ -226,7 +226,7 @@ def main_programm() -> None:
         Delta_S,
         f_list,
         d_g_list,
-        t_list,
+        t_N_list,
         i_enter,
         i_exit,
         T_init,
@@ -290,9 +290,9 @@ def main_programm() -> None:
         rho_oxl_sec_approx_list,
         U_oxl_sec_approx_list,
         mu_oxl_sec_approx_list,
+        t_N_list,
         beta,
         delta_wall,
-        t_N_min,
         delta_p,
         h_p,
     )
