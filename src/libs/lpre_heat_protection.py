@@ -32,13 +32,6 @@ def chamber_params(
         for i in range(len(x_coord_list) - 1)
     ]
     Delta_x_list.append("-")
-    # Delta_x_list = [
-    #     round(x_coord - x_coord_list[i], 6)
-    #     for i, x_coord in enumerate(x_coord_list[1:])
-    # ]
-    # Delta_x_list = deque(Delta_x_list)
-    # Delta_x_list.appendleft("-")
-    # Delta_x_list = list(Delta_x_list)
 
     r_from_d = [diam / 2 for diam in d_list]
 
@@ -53,36 +46,12 @@ def chamber_params(
         for i in range(len(x_coord_list) - 1)
     ]
     Delta_xs_list.append("-")
-    # Delta_xs_list = [
-    #     round(
-    #         sqrt(
-    #             pow(x_coord_list[i + 1] - x_coord_list[i], 2)
-    #             + pow(r_from_d[i + 1] - r_from_d[i], 2)
-    #         ),
-    #         6,
-    #     )
-    #     for i, _ in enumerate(d_list[1:])
-    # ]
 
     Delta_S = [
         round(0.5 * pi * (d_list[i] + d_list[i + 1]) * Delta_xs_list[i], 6)
         for i in range(len(x_coord_list) - 1)
     ]
     Delta_S.append("-")
-    # Delta_S = [
-    #     round(0.5 * pi * (d_list[i] + d_list[i + 1]) * Delta_xs_list[i], 6)
-    #     for i, _ in enumerate(Delta_xs_list[1:])
-    # ]
-
-    # Delta_xs_list = deque(Delta_xs_list)
-    # Delta_xs_list.appendleft("-")
-    # Delta_xs_list = list(Delta_xs_list)
-    # Delta_xs_list.append("-")
-
-    # Delta_S = deque(Delta_S)
-    # Delta_S.appendleft("-")
-    # Delta_S = list(Delta_S)
-    # Delta_S.append("-")
 
     result = [
         [
@@ -192,7 +161,7 @@ def cooling_path_params(
         for i, _ in enumerate(n_p_list)
     ]
 
-    return result, t_list, f_list, d_g_list, h_p
+    return result, t_N_list, f_list, d_g_list, h_p
 
 
 def heat_flows_calc(
@@ -288,7 +257,7 @@ def heat_flows_calc(
                 )
                 * (S_list[i] / pow(Pr, 0.58))
             )
-            / 1000000,
+            / 1000000,  # -> MWt
             6,
         )
         for i, _ in enumerate(d_list)
@@ -298,7 +267,7 @@ def heat_flows_calc(
     epsilon_st_ef = (epsilon_ct + 1) / 2
     q_l_km = epsilon_st_ef * epsilon_g * c_o * pow(T_k / 100, 4)
 
-    q_l_kc = phi * q_l_km / 1000000
+    q_l_kc = phi * q_l_km / 1000000  # -> MWt
 
     q_l_list = []
     for i, x_coord in enumerate(x_coord_list):
@@ -368,21 +337,13 @@ def heat_in_cooling_path_calc(
     # ecli bydet oshibka, to ckopee vsego ona tyt
     delta_cp_list = ["-"]
 
-    delta_T_1 = 26
-    delta_cp = 5.01
-
     for i in reversed(range(i_exit - 1, i_enter - 1)):
+        j = 0
+        delta_T_1 = 26
+        delta_cp = 5.01
+        T_oxl = T_oxl_list[j]
         while True:
-            # if Delta_S[i] == '-':
-            #     T_oxl_list = deque(T_oxl_list)
-            #     T_oxl_list.appendleft("-")
-            #     T_oxl_list = list(T_oxl_list)
-
-            #     delta_cp_list = deque(delta_cp_list)
-            #     delta_cp_list.appendleft("-")
-            #     delta_cp_list = list(delta_cp_list)
-            #     break
-            T_cp_1 = T_oxl_list[0] + 0.5 * delta_T_1
+            T_cp_1 = T_oxl + 0.5 * delta_T_1
             cp_cp_1 = find_thermo_phisics_coeffs(coolant_type, p_init, T_cp_1)[0]
 
             delta_T_2 = (
@@ -392,21 +353,24 @@ def heat_in_cooling_path_calc(
                 * Delta_S[i]
                 / (m_oxl * cp_cp_1)
             )
-            T_cp_2 = T_oxl_list[0] + 0.5 * delta_T_2
+
+            T_cp_2 = T_oxl + 0.5 * delta_T_2
             cp_cp_2 = find_thermo_phisics_coeffs(coolant_type, p_init, T_cp_2)[0]
 
-            delta_cp = (cp_cp_2 - cp_cp_1) / cp_cp_1 * 100
+            delta_cp = ((cp_cp_2 - cp_cp_1) / cp_cp_1) * 100
 
             if delta_cp > 5 or delta_cp < 0:
                 delta_T_1 = delta_T_2
             else:
                 T_oxl_list = deque(T_oxl_list)
-                T_oxl_list.appendleft(round(T_oxl_list[i_enter - 2 - i] + delta_T_2, 6))
+                T_oxl_list.appendleft(round(T_oxl + delta_T_2, 6))
                 T_oxl_list = list(T_oxl_list)
 
                 delta_cp_list = deque(delta_cp_list)
                 delta_cp_list.appendleft(round(delta_cp, 6))
                 delta_cp_list = list(delta_cp_list)
+
+                j += 1
                 break
 
     cp_oxl_list = [
@@ -436,7 +400,8 @@ def heat_in_cooling_path_calc(
     ]
 
     U_oxl_list = [
-        round(m_oxl / (f_list[i] * ro_oxl), 6) for _, ro_oxl in enumerate(rho_oxl_list)
+        round(m_oxl / (f_list[i] * rho_oxl), 6)
+        for i, rho_oxl in enumerate(rho_oxl_list)
     ]
 
     alpha_oxl_list = [
@@ -647,6 +612,7 @@ def udmh_phys_func() -> Type[InterpolatedUnivariateSpline]:
     lymbda_at_T_func = InterpolatedUnivariateSpline(
         temperature_init, thermal_conductivity_init, k=1
     )
+
     return Cp_at_T_func, mu_at_T_func, lymbda_at_T_func
 
 
@@ -717,6 +683,7 @@ def aerozine_phys_func() -> Type[InterpolatedUnivariateSpline]:
     lymbda_at_T_func = InterpolatedUnivariateSpline(
         temperature_init, thermal_conductivity_init, k=1
     )
+
     return Cp_at_T_func, mu_at_T_func, lymbda_at_T_func
 
 
@@ -793,9 +760,7 @@ def kerosene_phys_func() -> Type[InterpolatedUnivariateSpline]:
     Cp_at_T_func = InterpolatedUnivariateSpline(
         temperature_init, specific_heat_init, k=1
     )
-
     mu_at_T_func = InterpolatedUnivariateSpline(temperature_init, viscosity_init, k=1)
-
     lymbda_at_T_func = InterpolatedUnivariateSpline(
         temperature_init, thermal_conductivity_init, k=1
     )
@@ -897,19 +862,20 @@ def temperature_second_approx(
     R_og: float,
     T_ct_o: float,
 ) -> List[float]:
-
     S_list_sec_approx_list = [
         (2.065 * Cp_oxl * (T_ct_o - T_ct_g_list[i]) * pow(mu_og, 0.15))
         / (
             pow(R_og * T_ct_o, 0.425)
-            * pow(1 + T_ct_g_list[i] / T_ct_o, 0.595)
-            * pow(3 + T_ct_g_list[i] / T_ct_o, 0.15)
+            * pow(1 + (T_ct_g_list[i] / T_ct_o), 0.595)
+            * pow(3 + (T_ct_g_list[i] / T_ct_o), 0.15)
         )
         for i, Cp_oxl in enumerate(cp_oxl_list)
     ]
 
-    # q_k_sec_approx_list = [q_k_var * 1.1 for _, q_k_var in enumerate(q_k_list)]
-    q_k_sec_approx_list = [q_k_var * S_list_sec_approx_list[i] / S_list[i] for i, q_k_var in enumerate(q_k_list)]
+    q_k_sec_approx_list = [
+        q_k_var * S_list_sec_approx_list[i] / S_list[i]
+        for i, q_k_var in enumerate(q_k_list)
+    ]
 
     return q_k_sec_approx_list, S_list_sec_approx_list
 
@@ -921,12 +887,12 @@ def calculation_temperature_coolant_wall(
     lymbda_material: float,
 ) -> List[float]:
 
-    temperature_coolant_wall = [
+    temperature_coolant_wall_list = [
         T_ct_g - (delta_ct / lymbda_material) * q_sum_list_sec_approx[i]
         for i, T_ct_g in enumerate(second_appr_T_ct_g_list)
     ]
 
-    return temperature_coolant_wall
+    return temperature_coolant_wall_list
 
 
 def calc_coolant_pressure_losses(
@@ -935,21 +901,24 @@ def calc_coolant_pressure_losses(
     rho_oxl_sec_approx_list: List[float],
     U_oxl_sec_approx_list: List[float],
     mu_oxl_sec_approx_list: List[float],
+    t_N_list: List[float],
     beta: float,
     delta_wall: float,
-    t_N_min: float,
     delta_p: float,
     h_p: float,
 ) -> List[List[float]]:
-    # ?
-    d_eff = 2 * (t_N_min - delta_p) * h_p / (t_N_min - delta_p + h_p)
-
     Re_num_list = [
-        round(rho_oxl * U_oxl_sec_approx_list[i] * d_eff / mu_oxl_sec_approx_list[i], 0)
+        round(
+            rho_oxl
+            * U_oxl_sec_approx_list[i]
+            * d_g_list[i]
+            / mu_oxl_sec_approx_list[i],
+            0,
+        )
         for i, rho_oxl in enumerate(rho_oxl_sec_approx_list)
     ]
 
-    omega = omega_relation(t_N_min, delta_p, h_p)
+    omega_list = omega_relation(t_N_list, delta_p, h_p)
 
     delta_OTH_ct_list = [
         round(float(delta_wall) / float(d_g), 4) for _, d_g in enumerate(d_g_list)
@@ -964,19 +933,23 @@ def calc_coolant_pressure_losses(
     for i, delta_OTH_ct in enumerate(delta_OTH_ct_list):
         zeta = "-"
         if Re_num_list[i] <= 3500 and Re_num_list[i] >= 0:
-            zeta = 64 * omega / Re_num_list[i]
+            zeta = 64 * omega_list[i] / Re_num_list[i]
         elif Re_num_list[i] >= 560 / delta_OTH_ct:
-            zeta = omega / pow(2 * log10(3.7 / delta_OTH_ct), 2)
+            zeta = omega_list[i] / pow(2 * log10(3.7 / delta_OTH_ct), 2)
         elif Re_num_list[i] > 3500 and Re_num_list[i] < 560 / delta_OTH_ct:
             if delta_OTH_ct >= 0.01 and delta_OTH_ct <= 0.6001:
                 zeta = (
-                    0.1 * pow(1.46 * delta_OTH_ct + 100 / Re_num_list[i], 0.25) * omega
+                    0.1
+                    * pow(1.46 * delta_OTH_ct + 100 / Re_num_list[i], 0.25)
+                    * omega_list[i]
                 )
             elif delta_OTH_ct >= 0.0001 and delta_OTH_ct <= 0.01:
-                zeta = 1.42 * omega / pow(log10(Re_num_list[i] / delta_OTH_ct), 2)
+                zeta = (
+                    1.42 * omega_list[i] / pow(log10(Re_num_list[i] / delta_OTH_ct), 2)
+                )
         zeta_list.append(round(zeta, 5))
 
-    delta_p = [
+    delta_press = [
         round(
             zeta_list[i]
             * ((rho_oxl_sec_approx_list[i] * pow(U_oxl_sec_approx_list[i], 2)) / 2)
@@ -986,7 +959,7 @@ def calc_coolant_pressure_losses(
         )
         for i in range(len(rho_oxl_sec_approx_list) - 1)
     ]
-    delta_p.append("-")
+    delta_press.append("-")
 
     Re_gr_list = [
         round(560 / delta_OTH_ct, 0) for _, delta_OTH_ct in enumerate(delta_OTH_ct_list)
@@ -999,7 +972,7 @@ def calc_coolant_pressure_losses(
             Re_gr_list[i],
             zeta_list[i],
             l_list[i],
-            delta_p[i],
+            delta_press[i],
         ]
         for i, Re_num in enumerate(Re_num_list)
     ]
@@ -1007,14 +980,14 @@ def calc_coolant_pressure_losses(
     return result
 
 
-def omega_relation(t_N_min: float, delta_p: float, h_p: float) -> float:
+def omega_relation(t_N_list: List[float], delta_p: float, h_p: float) -> List[float]:
     omega_init = [1.5, 1.32, 1.25, 1.1, 1.03, 0.97, 0.91, 0.9]
     a_b_init = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1]
 
     omega_func = InterpolatedUnivariateSpline(a_b_init, omega_init, k=1)
-    omega = omega_func((t_N_min - delta_p) / h_p)
+    omega_list = [omega_func((t_N - delta_p) / h_p) for _, t_N in enumerate(t_N_list)]
 
-    return omega
+    return omega_list
 
 
 def get_lambda(q: float, k: float, key: str) -> float:
