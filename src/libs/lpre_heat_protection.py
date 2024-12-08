@@ -886,9 +886,10 @@ def calculation_temperature_coolant_wall(
     delta_ct: float,
     lymbda_material: float,
 ) -> List[float]:
-
+    
+    # lymbda should have func relation at T
     temperature_coolant_wall_list = [
-        T_ct_g - (delta_ct / lymbda_material) * q_sum_list_sec_approx[i]
+        T_ct_g - (delta_ct / lymbda_material) * q_sum_list_sec_approx[i] * 1000000
         for i, T_ct_g in enumerate(second_appr_T_ct_g_list)
     ]
 
